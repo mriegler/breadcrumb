@@ -1,12 +1,12 @@
 /*
  * Copyright 2009-2018 Hippo B.V. (http://www.onehippo.com)
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *  http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -112,6 +112,30 @@ public class BreadcrumbProvider {
     }
 
     /**
+     * Constructor that takes all settings directly, without involving a component
+     *
+     * @param breadcrumbMenus comma-separated list of menu names
+     * @param breadcrumbSeparator breadcrumb separator
+     * @param addContentBased flag determining whether to walk the content upwards for breadcrumb elements
+     * @param linkNotFoundMode enum determining hode to handle missing links
+     * @param addTrailingDocumentOnly flag determining behaviour whether to add just one trailing document or all.
+     */
+    @SuppressWarnings("unused")
+    public BreadcrumbProvider(final String breadcrumbMenus,
+                              final String breadcrumbSeparator,
+                              final boolean addContentBased,
+                              final LinkNotFoundMode linkNotFoundMode,
+                              final boolean addTrailingDocumentOnly) {
+        this.component = null;
+
+        this.breadcrumbMenus = breadcrumbMenus;
+        this.breadcrumbSeparator = breadcrumbSeparator;
+        this.addContentBased = addContentBased;
+        this.linkNotFoundMode = linkNotFoundMode;
+        this.addTrailingDocumentOnly = addTrailingDocumentOnly;
+    }
+
+    /**
      * Generate the breadcrumb.
      *
      * @param request HST request
@@ -149,7 +173,7 @@ public class BreadcrumbProvider {
                 breadcrumbItems.stream().map(BreadcrumbItem::getTitle).toArray());
 
         // post process the generated breadcrumb for any entries that point to pagenotfound
-        if(linkNotFoundMode != null) {
+        if (linkNotFoundMode != null) {
             postProcessItemsForNotFoundLinks(request, breadcrumbItems);
             log.info("{} post processed breadcrumb entries, using mode for not found links: {}", this.getClass().getName(), linkNotFoundMode);
         }
@@ -306,8 +330,7 @@ public class BreadcrumbProvider {
                     }
                 }
 
-            }
-            else if (this.addContentBased) {
+            } else if (this.addContentBased) {
                 addContentBasedItems(items, currentBean, currentSmi, request);
             }
         }
@@ -412,10 +435,10 @@ public class BreadcrumbProvider {
     /**
      * Add breadcrumb items based on content, from current upwards to the content base bean.
      *
-     * @param items                      list of breadcrumb items
-     * @param currentBean                bean described by URL
-     * @param currentSmi                 site map item of the current bean
-     * @param request                    HST request
+     * @param items       list of breadcrumb items
+     * @param currentBean bean described by URL
+     * @param currentSmi  site map item of the current bean
+     * @param request     HST request
      */
     protected void addContentBasedItems(final List<BreadcrumbItem> items, HippoBean currentBean,
                                         final ResolvedSiteMapItem currentSmi,
@@ -426,7 +449,7 @@ public class BreadcrumbProvider {
         HippoBean bean = currentBean;
 
         // go up to until site content base bean
-        while (!bean.isSelf(siteContentBean)){
+        while (!bean.isSelf(siteContentBean)) {
             final BreadcrumbItem item = getBreadcrumbItem(request, bean);
             if ((item != null) && (item.getLink() != null) && !item.getLink().isNotFound()) {
                 items.add(item);
@@ -438,8 +461,8 @@ public class BreadcrumbProvider {
     /**
      * Post processes the breadcrumb items to check if the contained link points to the pagenotfound hst:page. If so, it sets the notFound flag in that link
      *
-     * @param items                      list of breadcrumb items
-     * @param request                    HST request
+     * @param items   list of breadcrumb items
+     * @param request HST request
      */
     protected void postProcessItemsForNotFoundLinks(final HstRequest request, final List<BreadcrumbItem> items) {
         for (BreadcrumbItem item : items) {
@@ -450,9 +473,9 @@ public class BreadcrumbProvider {
                 }
                 if (hstSiteMapItem.getComponentConfigurationIdMappings().size() != 0) {
                     ResolvedSiteMapItem resolvedSiteMapItem = item.getLink().getMount().getHstSiteMapMatcher().match(
-                        item.getLink().getPath(), request.getRequestContext().getResolvedMount());
+                            item.getLink().getPath(), request.getRequestContext().getResolvedMount());
                     if (resolvedSiteMapItem != null &&
-                        HST_PAGES_PAGENOTFOUND_ID.equals(resolvedSiteMapItem.getHstComponentConfiguration().getName())) {
+                            HST_PAGES_PAGENOTFOUND_ID.equals(resolvedSiteMapItem.getHstComponentConfiguration().getName())) {
                         item.getLink().setNotFound(true);
                     }
                 }
@@ -498,8 +521,7 @@ public class BreadcrumbProvider {
             return new BreadcrumbItem(
                     context.getHstLinkCreator().create(bean.getNode(), context, null/*preferredItem*/, true/*fallback*/,
                             navigationStateful), bean.getDisplayName());
-        }
-        else {
+        } else {
             return new BreadcrumbItem(context.getHstLinkCreator().create(bean, context), bean.getDisplayName());
         }
     }
