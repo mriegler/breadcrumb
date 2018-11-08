@@ -23,6 +23,7 @@ import org.apache.commons.lang.StringUtils;
 import org.hippoecm.hst.component.support.bean.BaseHstComponent;
 import org.hippoecm.hst.configuration.HstNodeTypes;
 import org.hippoecm.hst.configuration.sitemap.HstSiteMapItem;
+import org.hippoecm.hst.content.beans.ObjectBeanManagerException;
 import org.hippoecm.hst.content.beans.standard.HippoBean;
 import org.hippoecm.hst.content.beans.standard.HippoDocument;
 import org.hippoecm.hst.core.component.HstRequest;
@@ -30,6 +31,7 @@ import org.hippoecm.hst.core.request.HstRequestContext;
 import org.hippoecm.hst.core.request.ResolvedSiteMapItem;
 import org.hippoecm.hst.core.sitemenu.HstSiteMenu;
 import org.hippoecm.hst.core.sitemenu.HstSiteMenuItem;
+import org.hippoecm.hst.util.PathUtils;
 import org.onehippo.forge.breadcrumb.om.Breadcrumb;
 import org.onehippo.forge.breadcrumb.om.BreadcrumbItem;
 import org.slf4j.Logger;
@@ -340,13 +342,37 @@ public class BreadcrumbProvider {
         return items;
     }
 
-    protected HippoBean getBeanForResolvedSiteMapItem(final HstRequest request, final ResolvedSiteMapItem siteMapItem) {
-
-        HippoBean bean = getComponent().getBeanForResolvedSiteMapItem(request, siteMapItem);
+    /**
+     * Return a <code>HippoBean</code> when it can be found for the relativeContentPath for the <code>{@link ResolvedSiteMapItem}</code>. If there is no
+     * relativeContentPath available in the <code>{@link ResolvedSiteMapItem}</code>, or when the relativeContentPath does not point to an existing jcr node,
+     * <code>null</code> will be returned
+     * @param request
+     * @param resolvedSiteMapItem
+     * @return A <code>HippoBean</code> or <code>null</code> when there cannot be created a content bean for this resolvedSiteMapItem
+     */
+    public HippoBean getBeanForResolvedSiteMapItem(HstRequest request, ResolvedSiteMapItem resolvedSiteMapItem) {
+        final HstRequestContext requestContext = request.getRequestContext();
+        String base = requestContext.getSiteContentBasePath();
+        String relPath = PathUtils.normalizePath(resolvedSiteMapItem.getRelativeContentPath());
+        HippoBean bean = null;
+        if(relPath == null) {
+            log.debug("Cannot return a content bean for relative path null for resolvedSitemapItem belonging to '{}'. Return null", resolvedSiteMapItem.getHstSiteMapItem().getId());
+            bean = null;
+        } else {
+            try {
+                if ("".equals(relPath)) {
+                    bean = (HippoBean) requestContext.getObjectBeanManager().getObject("/" + base);
+                } else {
+                    bean = (HippoBean) requestContext.getObjectBeanManager().getObject("/" + base + "/" + relPath);
+                }
+            } catch (ObjectBeanManagerException e) {
+                log.error("ObjectBeanManagerException. Return null : {}", e);
+            }
+        }
 
         if (bean != null) {
             // correction: one level up if it's an _index_ item, to prevent doubles
-            if (siteMapItem.getPathInfo().endsWith(HstNodeTypes.INDEX)) {
+            if (resolvedSiteMapItem.getPathInfo().endsWith(HstNodeTypes.INDEX)) {
                 bean = bean.getParentBean();
             }
         }
